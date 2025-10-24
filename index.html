@@ -1,0 +1,204 @@
+<style>
+/* === CSS === */
+#search-box {
+  width: 50%;
+  padding: 10px 15px;
+  margin-bottom: 15px;
+  border-radius: 15px;
+  border: 1px solid #555;
+  background: #1a1836;
+  color: white;
+  font-size: 16px;
+}
+
+#faucet-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.faucet-card {
+  background: #0d0b2d;
+  color: white;
+  padding: 15px;
+  border-radius: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+
+.faucet-name {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.faucet-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* tombol default */
+.btn {
+  background: linear-gradient(90deg,#4568dc,#b06ab3);
+  color: white !important;
+  padding: 6px 15px;
+  border-radius: 25px;
+  text-decoration: none;
+  font-weight: bold;
+  display: inline-block;
+}
+
+/* status FREE → hijau */
+.btn-free {
+  background: linear-gradient(90deg, #28a745, #5cd65c);
+}
+
+/* status APIKEY → oranye */
+.btn-apikey {
+  background: linear-gradient(90deg, #ff9800, #ff5722);
+}
+
+  .btn-free:hover {
+  background: linear-gradient(90deg, #34d058, #6fe67a);
+}
+
+.btn-apikey:hover {
+  background: linear-gradient(90deg, #ffb74d, #ff7043);
+}
+
+  
+/* hover efek hanya untuk tombol default */
+a.btn:hover {
+  background: linear-gradient(90deg,#5f7dfc,#d77bdb);
+}
+
+.faucet-actions a.btn {
+  color: white !important;
+}
+
+/* pagination */
+#pagination {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* tombol pagination */
+.page-btn {
+  background: #1a1836;            /* gelap (sama seperti tema) */
+  color: #bbb;                    /* abu-abu untuk angka */
+  padding: 6px 12px;
+  border-radius: 25px;
+  cursor: pointer;
+  border: 1px solid #333;
+  font-weight: bold;
+  transition: 0.3s;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+
+/* hover efek */
+.page-btn:hover {
+  background: linear-gradient(90deg, #5f7dfc, #d77bdb); /* ungu terang */
+  color: white;
+  border: none;
+}
+
+/* tombol aktif */
+.page-btn.active {
+  background: linear-gradient(90deg, #4568dc, #b06ab3); /* ungu gradasi */
+  color: white;
+  border: none;
+}
+
+
+</style>
+
+<input type="text" id="search-box" placeholder="Search...">
+<div id="faucet-list"></div>
+<div id="pagination"></div>
+
+<script>
+const dataUrl = "https://raw.githubusercontent.com/iewilmaestro/List-Script/main/list.json"; // Pastikan JSON valid
+
+let faucets = [];
+let filteredData = [];
+let currentPage = 1;
+const itemsPerPage = 10;
+
+const container = document.getElementById("faucet-list");
+const searchBox = document.getElementById("search-box");
+const pagination = document.getElementById("pagination");
+
+  
+function renderList(data, page = 1) {
+  container.innerHTML = "";
+  const start = (page - 1) * itemsPerPage;
+  const end = start + itemsPerPage;
+  const paginated = data.slice(start, end);
+
+  if (paginated.length === 0) {
+    container.innerHTML = "<p style='color:#ccc'>Tidak ditemukan...</p>";
+    return;
+  }
+
+  paginated.forEach(f => {
+    // tentukan kelas tombol status berdasarkan nilai
+    let statusClass = "";
+    if (f.status.toLowerCase() === "free") {
+      statusClass = "btn-free";
+    } else if (f.status.toLowerCase() === "apikey") {
+      statusClass = "btn-apikey";
+    } else {
+      statusClass = "btn"; // default
+    }
+
+    container.innerHTML += `
+      <div class="faucet-card">
+        <div class="faucet-name">${f.name}</div>
+        <div class="faucet-actions">
+          <span class="btn ${statusClass}">${f.status}</span>
+          <a href="${f.register}" target="_blank" class="btn">Register</a>
+          <a href="${f.download}" target="_blank" class="btn">Download</a>
+        </div>
+      </div>`;
+  });
+
+  renderPagination(data.length, page);
+}
+
+function renderPagination(totalItems, page) {
+  pagination.innerHTML = "";
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  for (let i = 1; i <= totalPages; i++) {
+    pagination.innerHTML += `
+      <button class="page-btn ${i === page ? "active" : ""}" onclick="goToPage(${i})">${i}</button>`;
+  }
+}
+
+function goToPage(page) {
+  currentPage = page;
+  renderList(filteredData, currentPage);
+}
+
+searchBox.addEventListener("input", (e) => {
+  const q = e.target.value.toLowerCase();
+  filteredData = faucets.filter(f => f.name.toLowerCase().includes(q));
+  currentPage = 1;
+  renderList(filteredData, currentPage);
+});
+
+fetch(dataUrl)
+  .then(r => r.json())
+  .then(data => {
+    faucets = data;
+    filteredData = data;
+    renderList(filteredData, currentPage);
+  })
+  .catch(err => {
+    console.error("Error fetch:", err);
+    container.innerHTML = "<p style='color:red'>Gagal memuat data dari GitHub ❌</p>";
+  });
+</script>
